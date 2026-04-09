@@ -1195,7 +1195,7 @@ function checkPw() {
     showAdminBell(true);
     lastSeenReqCount = requests.length; // don't notify for existing requests
     // Snapshot current vote counts so ticker only shows NEW votes
-    SONGS.forEach(s => { lastVoteSnapshot[s.id] = votes[s.id]||0; });
+    SONGS.forEach(s => { lastVoteSnapshot[String(s.id)] = votes[s.id]||0; });
     // Show Firebase status in ticker
     var container = document.getElementById('tickerItems');
     if (container) {
@@ -1579,16 +1579,16 @@ document.addEventListener('DOMContentLoaded', () => {
         db.ref('votes').on('value', function(snap) {
           var data = snap.val() || {};
           SONGS.forEach(function(s) {
-            var firebaseCount = data[s.id] || 0;
+            var firebaseCount = data[String(s.id)] || data[s.id] || 0;
             // Ticker: compare Firebase count against snapshot (not local votes)
-            if (adminUnlocked && lastVoteSnapshot[s.id] !== undefined) {
-              if (firebaseCount > lastVoteSnapshot[s.id]) {
-                var delta = firebaseCount - lastVoteSnapshot[s.id];
+            if (adminUnlocked && lastVoteSnapshot[String(s.id)] !== undefined) {
+              if (firebaseCount > lastVoteSnapshot[String(s.id)]) {
+                var delta = firebaseCount - lastVoteSnapshot[String(s.id)];
                 tickerQueue.push('🎵 +' + delta + ' vote' + (delta>1?'s':'') + ' for "' + s.title + '"');
                 if (!tickerRunning) runTicker();
               }
             }
-            lastVoteSnapshot[s.id] = firebaseCount;
+            lastVoteSnapshot[String(s.id)] = firebaseCount;
             votes[s.id] = firebaseCount;
             if (firebaseCount === 0 && userVotes.has(s.id)) {
               userVotes.delete(s.id);
@@ -1628,9 +1628,11 @@ document.addEventListener('DOMContentLoaded', () => {
         db.ref('newsongs').on('value', function(snap) {
           var data = snap.val() || {};
           Object.values(data).forEach(function(song) {
-            if (!SONGS.find(function(s){ return s.id === song.id; })) {
+            var songId = typeof song.id === 'string' ? parseInt(song.id) : song.id;
+            song.id = songId;
+            if (!SONGS.find(function(s){ return s.id === songId; })) {
               SONGS.push(song);
-              votes[song.id] = votes[song.id] || 0;
+              votes[songId] = votes[songId] || 0;
             }
           });
           renderSongs();
@@ -1641,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // DELETED SONGS — sync deletions across all devices
         db.ref('deleted').on('value', function(snap) {
           var data = snap.val() || {};
-          var deletedIds = Object.keys(data).map(Number);
+          var deletedIds = Object.keys(data).map(Number); // convert string keys to numbers
           if (deletedIds.length > 0) {
             SONGS = SONGS.filter(function(s){ return deletedIds.indexOf(s.id) === -1; });
             deletedIds.forEach(function(id) {
@@ -1658,7 +1660,10 @@ document.addEventListener('DOMContentLoaded', () => {
         db.ref('active').on('value', function(snap) {
           var data = snap.val() || {};
           SONGS.forEach(function(s) {
-            if (data.hasOwnProperty(s.id)) {
+            var key = String(s.id);
+            if (data.hasOwnProperty(key)) {
+              s.active = data[key];
+            } else if (data.hasOwnProperty(s.id)) {
               s.active = data[s.id];
             }
           });
