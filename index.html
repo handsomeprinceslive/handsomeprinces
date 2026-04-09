@@ -789,7 +789,7 @@ header {
 
 <!-- Request toast panel -->
 <div class="notif-toast" id="notifToast">
-  <div class="notif-toast-title">📨 New Song Requests</div>
+  <div class="notif-toast-title" id="notifToastTitle">📨 New Notification</div>
   <div id="notifToastItems"></div>
   <button class="notif-toast-close" onclick="dismissNotifs()">Mark all as seen ✓</button>
 </div>
@@ -1196,6 +1196,11 @@ function checkPw() {
     lastSeenReqCount = requests.length; // don't notify for existing requests
     // Snapshot current vote counts so ticker only shows NEW votes
     SONGS.forEach(s => { lastVoteSnapshot[s.id] = votes[s.id]||0; });
+    // Show Firebase status in ticker
+    var container = document.getElementById('tickerItems');
+    if (container) {
+      container.innerHTML = '<div class="ticker-item" style="position:relative;transform:none;animation:none;opacity:1;font-family:Share Tech Mono,monospace;font-size:.75rem;color:var(--green)">' + (window._fbReady ? '🔥 Firebase connected — votes syncing live' : '⚠️ Offline mode — votes local only') + '</div>';
+    }
     renderAdminSetlist(); renderAdminAll(); renderAdminRequests();
   } else {
     document.getElementById('pwErr').style.display='block';
@@ -1497,6 +1502,7 @@ function resetGig() {
   SONGS.forEach(s=>{ votes[s.id]=0; }); userVotes.clear();
   try { localStorage.removeItem('hp_uservotes'); } catch(e) {}
   renderSongs(); updateStats();
+  if (adminUnlocked) renderAdminSetlist(); // update Tonight immediately
   if (window._fbReady) window._fb.resetVotes();
 }
 function resetPlayed() {
@@ -1564,6 +1570,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var db = firebase.database();
 
     window._fbReady = true;
+    console.log('Firebase connected successfully');
     window._fb = {
 
       init: function() {
@@ -1592,6 +1599,7 @@ document.addEventListener('DOMContentLoaded', () => {
           var topPanel = document.getElementById('panel-top');
           if (topPanel && topPanel.classList.contains('active')) renderLeaderboard();
           if (adminUnlocked) renderAdminSetlist();
+          saveVotesToStorage(); // keep localStorage in sync with Firebase
         });
 
         // PLAYED — sync in real time
@@ -1664,6 +1672,10 @@ document.addEventListener('DOMContentLoaded', () => {
       castVote: function(id, adding) {
         db.ref('votes/' + id).transaction(function(current) {
           return Math.max(0, (current || 0) + (adding ? 1 : -1));
+        }, function(error, committed, snapshot) {
+          if (error) {
+            console.error('Vote sync failed:', error);
+          }
         });
       },
 
