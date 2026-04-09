@@ -1198,7 +1198,7 @@ function checkPw() {
     showAdminBell(true);
     lastSeenReqCount = requests.length; // don't notify for existing requests
     // Snapshot current vote counts so ticker only shows NEW votes
-    SONGS.forEach(s => { lastVoteSnapshot[String(s.id)] = votes[s.id]||0; });
+    SONGS.forEach(s => { window.lastVoteSnapshot[String(s.id)] = votes[s.id]||0; });
     // Show Firebase status in ticker
     var container = document.getElementById('tickerItems');
     if (container) {
@@ -1392,8 +1392,8 @@ function recordVoteTick(songId, newCount) {
 
 function runTicker() {
   const container = document.getElementById('tickerItems');
-  if (!tickerQueue.length) {
-    tickerRunning = false;
+  if (!window.tickerQueue.length) {
+    window.tickerRunning = false;
     // Keep last message visible — remove animation class so it stays put
     if (container) {
       const last = container.querySelector('.ticker-item');
@@ -1403,8 +1403,8 @@ function runTicker() {
     }
     return;
   }
-  tickerRunning = true;
-  const msg = tickerQueue.shift();
+  window.tickerRunning = true;
+  const msg = window.tickerQueue.shift();
   if (!container) { tickerRunning=false; return; }
   container.innerHTML = '<div class="ticker-item">' + msg + '</div>';
   setTimeout(runTicker, 4000);
@@ -1414,6 +1414,11 @@ function runTicker() {
 let notifRequests = [];      // unseen requests
 let lastSeenReqCount = 0;
 let notifToastOpen = false;
+
+// ── GLOBALS shared with Firebase script ──────────────────────────────────
+window.lastVoteSnapshot = {};
+window.tickerQueue = [];
+window.tickerRunning = false;
 
 function checkNewRequests(newRequests) {
   if (!adminUnlocked) return;
@@ -1588,14 +1593,14 @@ document.addEventListener('DOMContentLoaded', () => {
           SONGS.forEach(function(s) {
             var firebaseCount = data[String(s.id)] || data[s.id] || 0;
             // Ticker: compare Firebase count against snapshot (not local votes)
-            if (adminUnlocked && lastVoteSnapshot[String(s.id)] !== undefined) {
-              if (firebaseCount > lastVoteSnapshot[String(s.id)]) {
-                var delta = firebaseCount - lastVoteSnapshot[String(s.id)];
-                tickerQueue.push('🎵 +' + delta + ' vote' + (delta>1?'s':'') + ' for "' + s.title + '"');
-                if (!tickerRunning) runTicker();
+            if (adminUnlocked && window.lastVoteSnapshot[String(s.id)] !== undefined) {
+              if (firebaseCount > window.lastVoteSnapshot[String(s.id)]) {
+                var delta = firebaseCount - window.lastVoteSnapshot[String(s.id)];
+                window.tickerQueue.push('🎵 +' + delta + ' vote' + (delta>1?'s':'') + ' for "' + s.title + '"');
+                if (!window.tickerRunning) runTicker();
               }
             }
-            lastVoteSnapshot[String(s.id)] = firebaseCount;
+            window.lastVoteSnapshot[String(s.id)] = firebaseCount;
             votes[s.id] = firebaseCount;
             // Aggressively clear stale ticks - if Firebase shows 0, always untick
             if (firebaseCount === 0) {
