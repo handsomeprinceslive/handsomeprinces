@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Firebase Test</title>
+<style>
+body { font-family: monospace; background: #000; color: #0f0; padding: 20px; font-size: 16px; }
+button { background: #0f0; color: #000; border: none; padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
+#log { margin-top: 20px; line-height: 1.8; }
+.ok { color: #0f0; }
+.err { color: #f00; }
+.info { color: #ff0; }
+</style>
+</head>
+<body>
+<h2>🔥 Firebase Connection Test</h2>
+<p>This page tests if Firebase is syncing correctly.</p>
+<button onclick="sendVote()">📤 Send Test Vote</button>
+<button onclick="clearVotes()">🗑 Clear Votes</button>
+<div id="log"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+var log = document.getElementById('log');
+function addLog(msg, cls) {
+  var t = new Date().toLocaleTimeString();
+  log.innerHTML = '<div class="'+(cls||'info')+'">['+t+'] '+msg+'</div>' + log.innerHTML;
+}
+
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyA5YnqRTuewQRg7NnvlXsAoR6d0jV1i5hg",
+    authDomain: "handsome-princes-live-f826d.firebaseapp.com",
+    databaseURL: "https://handsome-princes-live-f826d-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "handsome-princes-live-f826d",
+    storageBucket: "handsome-princes-live-f826d.firebasestorage.app",
+    messagingSenderId: "822485155944",
+    appId: "1:822485155944:web:ae28116f49ad6bc389bbdd"
+  });
+  
+  var db = firebase.database();
+  addLog('Firebase initialised ✓', 'ok');
+
+  // Listen for test votes
+  db.ref('test').on('value', function(snap) {
+    var data = snap.val();
+    addLog('📥 RECEIVED from Firebase: ' + JSON.stringify(data), 'ok');
+  }, function(err) {
+    addLog('❌ Listener error: ' + err.message, 'err');
+  });
+
+  // Listen for real votes
+  db.ref('votes').on('value', function(snap) {
+    var data = snap.val() || {};
+    var count = Object.keys(data).length;
+    addLog('📊 Votes in Firebase: ' + count + ' songs have votes. Data: ' + JSON.stringify(data), 'info');
+  });
+
+  addLog('Listeners attached — waiting for data...', 'info');
+
+} catch(e) {
+  addLog('❌ Firebase error: ' + e.message, 'err');
+}
+
+function sendVote() {
+  var ts = Date.now();
+  db.ref('test/vote_' + ts).set({
+    from: navigator.userAgent.substr(0,30),
+    time: ts,
+    value: Math.floor(Math.random() * 100)
+  }, function(err) {
+    if (err) addLog('❌ Write failed: ' + err.message, 'err');
+    else addLog('✓ Vote written to Firebase!', 'ok');
+  });
+}
+
+function clearVotes() {
+  db.ref('test').set(null);
+  addLog('Test votes cleared', 'info');
+}
+</script>
+</body>
+</html>
