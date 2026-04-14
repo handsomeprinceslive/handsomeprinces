@@ -1335,10 +1335,10 @@ function toggleSongActive(id, isActive) {
   const song = SONGS.find(s=>s.id===id);
   if (!song) return;
   song.active = isActive;
-  // Sync to Firebase if connected
-  if (window._fbReady) {
-    window._fb.setSongActive(id, isActive);
-  }
+  // Save to localStorage for instant apply on next load
+  saveActiveToStorage();
+  // Sync to Firebase for all other devices
+  if (window._fbReady) window._fb.setSongActive(id, isActive);
   renderManageSongs();
   renderSongs();
   populateReqSelect();
@@ -1530,6 +1530,27 @@ function resetPlayed() {
 function saveVotesToStorage() {
   try { localStorage.setItem('hp_uservotes', JSON.stringify([...userVotes])); } catch(e) {}
 }
+function saveActiveToStorage() {
+  try {
+    var overrides = {};
+    SONGS.forEach(function(s) { if (s.active === false) overrides[s.id] = false; });
+    localStorage.setItem('hp_active', JSON.stringify(overrides));
+  } catch(e) {}
+}
+function loadActiveFromStorage() {
+  try {
+    var saved = localStorage.getItem('hp_active');
+    if (saved) {
+      var overrides = JSON.parse(saved);
+      SONGS.forEach(function(s) {
+        if (overrides.hasOwnProperty(s.id) || overrides.hasOwnProperty(String(s.id))) {
+          s.active = false;
+        }
+      });
+    }
+  } catch(e) {}
+}
+
 function loadVotesFromStorage() {
   try {
     const saved = localStorage.getItem('hp_uservotes');
@@ -1560,6 +1581,7 @@ function shareApp() {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
 loadVotesFromStorage();
+loadActiveFromStorage(); // apply stored active overrides immediately
 renderSongs(); updateStats();
 // Firebase connects automatically once config is filled in
 document.addEventListener('DOMContentLoaded', () => {
@@ -1689,6 +1711,12 @@ document.addEventListener('DOMContentLoaded', () => {
               s.active = true;
             }
           });
+          // Save active overrides to localStorage for instant load next time
+          try {
+            var overrides = {};
+            SONGS.forEach(function(s) { if (s.active === false) overrides[s.id] = false; });
+            localStorage.setItem('hp_active', JSON.stringify(overrides));
+          } catch(e) {}
           fbLoaded.active = true; checkAllLoaded();
           // Always re-render so active changes show immediately on all devices
           renderSongs();
