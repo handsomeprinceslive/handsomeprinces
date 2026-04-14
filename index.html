@@ -629,7 +629,10 @@ header {
     <button class="filter-btn" data-f="60s" onclick="setFilter('60s',this)">60s</button>
     <button class="filter-btn" data-f="50s" onclick="setFilter('50s',this)">50s</button>
   </div>
-  <div id="songList"></div>
+  <div id="songListLoader" style="text-align:center;padding:30px;font-family:Share Tech Mono,monospace;font-size:.8rem;color:var(--green);letter-spacing:.1em">
+  <div style="animation:pulse 1.5s infinite">● Connecting to live data...</div>
+</div>
+<div id="songList"></div>
 </div>
 
 <!-- TOP -->
@@ -993,6 +996,8 @@ function setFilter(f, btn) {
 
 // ─── RENDER SONGS ─────────────────────────────────────────────────────────
 function renderSongs() {
+  const loader = document.getElementById('songListLoader');
+  if (loader) loader.style.display = 'none';
   const q = document.getElementById('searchInput').value.toLowerCase();
   const list = document.getElementById('songList');
   let filtered = SONGS.filter(s => {
@@ -1650,9 +1655,8 @@ document.addEventListener('DOMContentLoaded', () => {
               votes[songId] = votes[songId] || 0;
             }
           });
-          renderSongs();
+          fbLoaded.active = true; checkAllLoaded();
           if (adminUnlocked) { renderManageSongs(); renderAdminSetlist(); }
-          updateStats();
         });
 
         // DELETED SONGS — sync deletions across all devices
@@ -1682,9 +1686,8 @@ document.addEventListener('DOMContentLoaded', () => {
               s.active = data[s.id];
             }
           });
-          renderSongs();
+          fbLoaded.active = true; checkAllLoaded();
           if (adminUnlocked) { renderManageSongs(); renderAdminSetlist(); }
-          updateStats();
         });
 
       },
