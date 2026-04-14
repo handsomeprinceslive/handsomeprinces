@@ -1684,9 +1684,16 @@ document.addEventListener('DOMContentLoaded', () => {
               s.active = data[key];
             } else if (data.hasOwnProperty(s.id)) {
               s.active = data[s.id];
+            } else {
+              // No override in Firebase — use default (true)
+              s.active = true;
             }
           });
           fbLoaded.active = true; checkAllLoaded();
+          // Always re-render so active changes show immediately on all devices
+          renderSongs();
+          populateReqSelect();
+          updateStats();
           if (adminUnlocked) { renderManageSongs(); renderAdminSetlist(); }
         });
 
