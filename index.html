@@ -932,6 +932,7 @@ let SONGS = [
   {id:125, title:"Unknown Legend", artist:"Neil Young", decade:"90s", active:true},
   {id:126, title:"Moving On Up", artist:"Primal Scream", decade:"90s", active:true},
   {id:127, title:"From Hank To Hendrix", artist:"Neil Young", decade:"90s", active:true},
+  {id:156, title:"Get The Message", artist:"Electronic", decade:"90s", active:true},
   {id:128, title:"It's A Dream", artist:"Neil Young", decade:"90s", active:true},
   {id:129, title:"Harvest Moon", artist:"Neil Young", decade:"90s", active:true},
   {id:130, title:"Live Forever", artist:"Oasis", decade:"90s", active:true},
@@ -961,7 +962,8 @@ let SONGS = [
   {id:154, title:"Seasons (Waiting On You)", artist:"Future Islands", decade:"00s", active:true},
   {id:155, title:"Valerie", artist:"The Zutons", decade:"00s", active:true},
 ];
-let nextId = 200;
+// Use timestamp-based ID to avoid clashes across sessions
+let nextId = 900 + Math.floor((Date.now() % 100000) / 100);
 
 // ─── STATE ────────────────────────────────────────────────────────────────
 let votes = {};        // songId -> count
